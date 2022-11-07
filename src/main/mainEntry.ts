@@ -1,4 +1,5 @@
 import { app, BrowserWindow, BrowserViewConstructorOptions } from 'electron'
+import { CommonWindowEvent } from './CommonWindowEvent';
 import { CustomScheme } from './CustomScheme';
 
 // 设置渲染进程开发者调试工具的警告, true 就不会显示警告了
@@ -6,6 +7,10 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = "true";
 
 let mainWindow: BrowserWindow;
 
+app.on("browser-window-created", (e, win) => {
+  console.log(win, "win")
+  CommonWindowEvent.regWinEvent(win);
+});
 
 app.whenReady().then(() => {
   const config: BrowserViewConstructorOptions = {
@@ -30,4 +35,5 @@ app.whenReady().then(() => {
     CustomScheme.registerScheme();
     mainWindow.loadURL(`app://index.html`);
   }
+  CommonWindowEvent.listen();
 })
