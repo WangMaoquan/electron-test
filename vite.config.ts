@@ -11,5 +11,12 @@ export default defineConfig({
     rollupOptions: {
       plugins: [buildPlugin()]
     }
+  },
+  resolve: {
+    alias: {
+      '@': '/src/',
+      'components': '/src/renderer/components/',
+      'window': '/src/renderer/window/'
+    }
   }
 })
