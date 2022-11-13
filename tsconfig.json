@@ -14,8 +14,8 @@
     "noEmit": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@/components": ["./src/renderer/components/*"],
-      "@/window": ["./src/renderer/window/"]
+      "components": ["./src/renderer/components/*"],
+      "window": ["./src/renderer/window/*"],
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
