@@ -1,5 +1,5 @@
 import { Plugin } from 'vite';
-import fs from 'fs';
+import fs from 'fs-extra';
 import path from 'path';
 
 class MyBuild {
@@ -27,6 +27,8 @@ class MyBuild {
     localPkgJson.devDependencies = {
       electron: electronConfig
     };
+    localPkgJson.dependencies["better-sqlite3"] = "*";
+    localPkgJson.dependencies["binging"] = "*";
     const targetJsonPath = path.join(process.cwd(), 'dist', 'package.json');
     fs.writeFileSync(targetJsonPath, JSON.stringify(localPkgJson));
     fs.mkdirSync(path.join(process.cwd(), 'dist/node_modules'))
@@ -60,15 +62,57 @@ class MyBuild {
 
     return require('electron-builder').build(options)
   }
+
+  async prepareSqlite() {
+    const srcDir = path.join(process.cwd(), `node_modules/better-sqlite3`);
+    const destDir = path.join(process.cwd(), `dist/node_modules/better-sqlite3`);
+    fs.ensureDirSync(destDir);
+    fs.copySync(srcDir, destDir, {
+      filter: (src, dest) => {
+        if (src.endsWith('better-sqlite3') || src.endsWith('build') || src.endsWith('Release') || src.endsWith('better-sqlite3.node')) {
+          return true;
+        } else if (src.includes('node_modules\\better-sqlite3\\lib')) {
+          return true
+        } else {
+          return false
+        }
+      }
+    })
+    const betterSqlPkgObj = {
+      name: 'better-sqlite3',
+      main: "lib/index.js"
+    }
+    const betterSqlPkgJson = JSON.stringify(betterSqlPkgObj);
+    const betterSqlPkgJsonPath = path.join(process.cwd(), "dist/node_modules/better-sqlite3/package.json");
+    fs.writeFileSync(betterSqlPkgJsonPath, betterSqlPkgJson);
+
+    const bingingPath = path.join(process.cwd(), `dist/node_modules/bingings/index.js`)
+    fs.ensureFileSync(bingingPath);
+    const bingingContent = `
+      module.exports = () => {
+        const addonPath = require("path").join(__dirname, "../better-sqlite3/build/Release/better_sqlite3.node");
+        return require(addonPath);
+      };
+    `;
+    fs.writeFileSync(bingingPath, bingingContent);
+    const bingingPkgObj = {
+      name:'binging',
+      main: 'index.js'
+    }
+    const bingingPkgJson = JSON.stringify(bingingPkgObj);
+    const bingingPkgJsonPath = path.join(process.cwd(), 'dist/node_modules/bingings/package.json');
+    fs.writeFileSync(bingingPkgJsonPath, bingingPkgJson);
+  }
 }
 
 export const buildPlugin = () => {
   return {
     name: 'build-plugin',
-    closeBundle() {
+    async closeBundle() {
       const build = new MyBuild();
       build.buildMain();
       build.preparePackageJson();
+      await build.prepareSqlite();
       build.buildInstaller();
     }
   } as Plugin
