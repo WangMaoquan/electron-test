@@ -1,4 +1,4 @@
-import { Plugin } from 'vite';
+import { Plugin, preprocessCSS } from 'vite';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -29,6 +29,7 @@ class MyBuild {
     };
     localPkgJson.dependencies["better-sqlite3"] = "*";
     localPkgJson.dependencies["binging"] = "*";
+    localPkgJson.dependencies["knex"] = "*";
     const targetJsonPath = path.join(process.cwd(), 'dist', 'package.json');
     fs.writeFileSync(targetJsonPath, JSON.stringify(localPkgJson));
     fs.mkdirSync(path.join(process.cwd(), 'dist/node_modules'))
@@ -103,6 +104,26 @@ class MyBuild {
     const bingingPkgJsonPath = path.join(process.cwd(), 'dist/node_modules/bingings/package.json');
     fs.writeFileSync(bingingPkgJsonPath, bingingPkgJson);
   }
+
+  prepareKnexjs() {
+    const pkgJsonPath = path.join(process.cwd(), `dist/node_modules/knex`);
+    fs.ensureFileSync(pkgJsonPath);
+    require('esbuild').buildSync({
+      entryPoints: ["./node_modules/knex/knex.js"],
+      bundle: true,
+      platform: 'node',
+      format: 'cjs',
+      minify: true,
+      outfile: './dist/node_modules/knex/index.js',
+      external: ['oracledb', 'pg-query-steam', 'pg', 'sqlite3', 'tedious', 'mysql', 'mysql2', 'better-sqlite3']
+    })
+    const pkgJsonObj = {
+      name: 'knex',
+      main: 'index.js'
+    }
+    const pkgJson = JSON.stringify(pkgJsonObj);
+    fs.writeFileSync(path.join(process.cwd(), 'dist/node_modules/knex/packages.json'), pkgJson)
+  }
 }
 
 export const buildPlugin = () => {
@@ -113,6 +134,7 @@ export const buildPlugin = () => {
       build.buildMain();
       build.preparePackageJson();
       await build.prepareSqlite();
+      build.prepareSqlite();
       build.buildInstaller();
     }
   } as Plugin
